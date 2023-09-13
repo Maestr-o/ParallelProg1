@@ -13,12 +13,12 @@ int main() {
         printf("Can't open the file");
         return 0;
     }
-    int k = 0;
-    int *p1 = fill_pol(fp, &k);
-    int *p2 = fill_pol(fp, &k);
+    int k1 = 0, k2 = 0;
+    int *p1 = fill_pol(fp, &k1);
+    int *p2 = fill_pol(fp, &k2);
     fclose(fp);
-    print_pol(p1, k);
-    print_pol(p2, k);
+    print_pol(p1, k1);
+    print_pol(p2, k2);
     free(p1);
     free(p2);
     return 0;
@@ -35,6 +35,11 @@ int *fill_pol(FILE *fp, int *k) {
     int i = 0;
     char c = getc(fp);
     while (c != EOF && c != '\n') {
+        int sign = 1;
+        if (c == '-') {
+            sign = -1;
+            c = getc(fp);
+        }
         int num = c - '0';
         p = (int *)realloc(p, sizeof(int) * (i + 2));
         c = getc(fp);
@@ -42,7 +47,7 @@ int *fill_pol(FILE *fp, int *k) {
             num = num * 10 + c - '0';
             c = getc(fp);
         }
-        p[i++] = num;
+        p[i++] = num * sign;
         if (c != '\n') c = getc(fp);
     }
     *k = i;
