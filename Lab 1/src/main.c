@@ -64,7 +64,6 @@ void run() {
         printf("Results are same!\n");
     else {
         printf("Results aren't same!\n");
-        return;
     }
 
     if (k1 > 10 || k2 > 10) { // вывод результата
@@ -110,27 +109,28 @@ long *fill_array(FILE *fp, int *k) {
 }
 
 void mult_pol(int n, mon_t pol1[], int k1, mon_t pol2[], int k2, mon_t res[]) {
-    int size_result = 0;
-    for (int i = 0; i < k1; i++) {
-        for (int j = 0; j < k2; j++) {
+    int size_result = 0, i;
+    for (i = 0; i < k1; i++) {
+        int j;
+        for (j = 0; j < k2; j++) {
             res[size_result].coefficient = pol1[i].coefficient * pol2[j].coefficient;
             res[size_result].exponents = (long *)calloc(sizeof(long), n);
-            for (int k = 0; k < n; k++) {
+            int k;
+            for (k = 0; k < n; k++) {
                 res[size_result].exponents[k] = pol1[i].exponents[k] + pol2[j].exponents[k];
             }
             size_result++;
         }
     }
-    size_result = 0;
-    for (int i = 0; i < k1 * k2 - 1; i++) { // подсчет подобных
-        for (int j = i + 1; j < k1 * k2 && res[i].coefficient != 0; j++) {
+    for (i = 0; i < size_result - 1; i++) { // подсчет подобных
+        int j;
+        for (j = i + 1; j < size_result && res[i].coefficient != 0; j++) {
             if (res[j].coefficient != 0) {
                 if (res[i].exponents[0] == res[j].exponents[0] &&
                     res[i].exponents[1] == res[j].exponents[1] &&
                     res[i].exponents[2] == res[j].exponents[2]) {
                     res[i].coefficient += res[j].coefficient;
                     res[j].coefficient = 0;
-                    size_result++;
                 }
             }
         }
@@ -138,21 +138,21 @@ void mult_pol(int n, mon_t pol1[], int k1, mon_t pol2[], int k2, mon_t res[]) {
 }
 
 void mult_pol_parallel(int n, mon_t pol1[], int k1, mon_t pol2[], int k2, mon_t res[]) {
-    #pragma omp parallel for
-    for (int i = 0; i < k1; i++) {
-        for (int j = 0; j < k2; j++) {
+    int i, j, k;
+    #pragma omp parallel for private(i, j, k)
+    for (i = 0; i < k1; i++) {
+        for (j = 0; j < k2; j++) {
             int local_size_result = i * k2 + j;
             res[local_size_result].coefficient = pol1[i].coefficient * pol2[j].coefficient;
             res[local_size_result].exponents = (long *)calloc(sizeof(long), n);
-            for (int k = 0; k < n; k++) {
+            for (k = 0; k < n; k++) {
                 res[local_size_result].exponents[k] = pol1[i].exponents[k] + pol2[j].exponents[k];
             }
         }
     }
-    int size_result = 0;
-    #pragma omp parallel for reduction(+:size_result)
-    for (int i = 0; i < k1 * k2 - 1; i++) { // подсчет подобных
-        for (int j = i + 1; j < k1 * k2 && res[i].coefficient != 0; j++) {
+    #pragma omp parallel for private(i, j) // подсчет подобных
+    for (i = 0; i < k1 * k2 - 1; i++) {
+        for (j = i + 1; j < k1 * k2 && res[i].coefficient != 0; j++) {
             if (res[j].coefficient != 0) {
                 if (res[i].exponents[0] == res[j].exponents[0] &&
                     res[i].exponents[1] == res[j].exponents[1] &&
@@ -160,8 +160,6 @@ void mult_pol_parallel(int n, mon_t pol1[], int k1, mon_t pol2[], int k2, mon_t 
                     #pragma omp atomic
                     res[i].coefficient += res[j].coefficient;
                     res[j].coefficient = 0;
-                    #pragma omp atomic
-                    size_result++;
                 }
             }
         }
@@ -169,20 +167,24 @@ void mult_pol_parallel(int n, mon_t pol1[], int k1, mon_t pol2[], int k2, mon_t 
 }
 
 void fill_struct(mon_t *s, long *p, int n, int k) {
-    for (int i = 0; i < k; i++) {
+    int i;
+    for (i = 0; i < k; i++) {
         s[i].exponents = (long *)malloc(sizeof(long) * n);
         s[i].coefficient = p[i * (n + 1)];
-        for (int j = 0; j < n; j++) {
+        int j;
+        for (j = 0; j < n; j++) {
             s[i].exponents[j] = p[i * (n + 1) + j + 1];
         }
     }
 }
 
 void print(mon_t res[], int n, int k) {
-    for (int i = 0; i < k; i++) {
+    int i;
+    for (i = 0; i < k; i++) {
         if (res[i].coefficient != 0) {
             printf("(%ld, ", res[i].coefficient);
-            for (int j = 0; j < n - 1; j++) {
+            int j;
+            for (j = 0; j < n - 1; j++) {
                 printf("%ld, ", res[i].exponents[j]);
             }
             printf("%ld); ", res[i].exponents[n - 1]);
@@ -193,10 +195,12 @@ void print(mon_t res[], int n, int k) {
 void print_to_file(mon_t res[], int n, int k, char *path) {
     FILE *fp = fopen(path, "w");
     if (!check_file(fp)) return;
-    for (int i = 0; i < k; i++) {
+    int i;
+    for (i = 0; i < k; i++) {
         if (res[i].coefficient != 0) {
             fprintf(fp, "(%ld, ", res[i].coefficient);
-            for (int j = 0; j < n - 1; j++) {
+            int j;
+            for (j = 0; j < n - 1; j++) {
                 fprintf(fp, "%ld, ", res[i].exponents[j]);
             }
             fprintf(fp, "%ld); ", res[i].exponents[n - 1]);
@@ -206,7 +210,8 @@ void print_to_file(mon_t res[], int n, int k, char *path) {
 }
 
 void free_pol(mon_t res[], int k) {
-    for (int i = 0; i < k; i++) {
+    int i;
+    for (i = 0; i < k; i++) {
         free(res[i].exponents);
     }
 }
@@ -220,9 +225,11 @@ int check_file(FILE *fp) {
 }
 
 int compare(mon_t res1[], mon_t res2[], int n, int k) {
-    for (int i = 0; i < k; i++) {
+    int i;
+    for (i = 0; i < k; i++) {
         if (res1[i].coefficient == res2[i].coefficient) {
-            for (int j = 0; j < n; j++) {
+            int j;
+            for (j = 0; j < n; j++) {
                 if (res1[i].exponents[j] != res2[i].exponents[j])
                     return 1;
             }

@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -Wextra -Werror
-BUILD=../build/lab1.exe
+BUILD=../build/prog
 LDFLAGS=-fopenmp
 
 all: build
@@ -12,7 +12,7 @@ main.o: main.c
 	@$(CC) $(CFLAGS) $(LDFLAGS) -c main.c -o main.o
 
 clean:
-	@del *.o
+	@rm -f *.o
 
 rebuild:
 	clean all
