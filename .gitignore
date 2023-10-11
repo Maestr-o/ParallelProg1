@@ -1,2 +1,3 @@
-/.vscode/
-/Lab 1/build/
+.vscode
+build
+src/*.o
